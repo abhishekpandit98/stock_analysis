@@ -12,17 +12,21 @@ ticker = st.text_input("Enter the Ticker", "TCS.NS")
 period_options = ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
 selected_period = st.selectbox("Select Data Period", period_options)
 
-days = st.slider("Enter number of days for SMA and RSI", min_value=1, max_value=365, step=1, value=30, format="%d")
+interval_options = ["1m", "2m", "5m", "15m", "30m", "1h", "1d", "1wk", "1mo"]
+selected_interval = st.selectbox("Select Data Interval", interval_options)
+
+
+days = st.slider("select number of Interval for SMA and RSI", min_value=1, max_value=365, step=1, value=30, format="%d")
 # Use the selected number of days in your analysis
-st.write(f"Selected number of days dor SMA and RSI: {days}")
+st.write(f"Selected number of Interval for SMA and RSI: {days}")
 
 # Fetch stock data
 data = yf.Ticker(ticker)
-df = data.history(period=selected_period)
+df = data.history(period=selected_period,interval=selected_interval)
 df.reset_index(inplace=True)
-df.set_index(pd.DatetimeIndex(df["Date"]), inplace=True)
+df.set_index(pd.DatetimeIndex(df["Datetime"]), inplace=True)
 
-column_to_drop =["Date","Dividends","Stock Splits"]
+column_to_drop =["Datetime","Dividends","Stock Splits"]
 df = df.drop(columns=column_to_drop )
 df["SMA"] = ta.sma(df["Close"], length=days)
 df["RSI"] = ta.rsi(df["Close"], length=days)
@@ -59,3 +63,5 @@ plt.legend()
 
 # Display the Matplotlib chart using st.pyplot
 st.pyplot(fig_rsi)
+
+
