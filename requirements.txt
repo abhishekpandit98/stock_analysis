@@ -1,7 +1,11 @@
     pandas
+    plotly
     numpy
     yfinance==0.2.33
     mplfinance
     pandas_ta
     streamlit
     matplotlib
+    cython
+    pystan
+    prophet 
