@@ -1,6 +1,6 @@
 # Stock Analysis App
 
-![Stock Analysis App](https://abhishekpandit98-stock-analysis-app-hnre6x.streamlit.app/)
+[Stock Analysis App](https://abhishekpandit98-stock-analysis-app-hnre6x.streamlit.app/)
 
 This web application provides a comprehensive analysis of stock data, allowing users to visualize candlestick charts, moving averages, RSI (Relative Strength Index), MACD (Moving Average Convergence Divergence), and predict future stock prices using the Prophet forecasting model.
 
