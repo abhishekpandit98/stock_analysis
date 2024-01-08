@@ -16,6 +16,9 @@ Make sure to install the required Python libraries by running:
 ```bash
 pip install -r requirements.txt
 
+```bash
+streamlit run app.py
+
 ### User Guide
 Enter the stock ticker symbol in the designated input field.
 Select the desired data period and time interval.
