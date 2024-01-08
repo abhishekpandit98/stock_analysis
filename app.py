@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas_ta as ta
 from prophet import Prophet
+from prophet.plot import plot_plotly
 
 # Set Streamlit theme
 st.set_page_config(page_title="Stock Analysis App", page_icon="📈", layout="wide")
@@ -27,8 +28,10 @@ interval_options = {"1d": ["1m", "2m", "5m", "15m", "30m", "1h"], "5d": ["1m", "
     "ytd": ["1d", "1wk", "1mo"],
     "max": ["1d", "1wk", "1mo"]}
 selected_interval = st.selectbox("Select Time Interval", interval_options.get(selected_period, []))
-days = st.slider("Select number of Interval for SMA and RSI", min_value=1, max_value=365, step=1, value=30, format="%d")
-st.write(f"Selected number of Interval for SMA and RSI: {days}")
+
+# Additional technical indicators
+indicator_options = ["SMA", "RSI", "Bollinger Bands", "Moving Average Envelopes"]
+selected_indicators = st.multiselect("Select Technical Indicators", indicator_options)
 
 # Fetch stock data
 try:
@@ -44,10 +47,30 @@ except Exception as e:
     st.error(f"Error fetching data")
     st.stop()
 
-# Calculating SMA and RSI
-df["SMA"] = ta.sma(df["Close"], length=days)
-df["RSI"] = ta.rsi(df["Close"], length=days)
+# Customizable technical indicators
+if "SMA" in selected_indicators:
+    sma_days = st.slider("Select number of Interval for SMA", min_value=1, max_value=365, step=1, value=30, format="%d")
+    df["SMA"] = ta.sma(df["Close"], length=sma_days)
 
+if "RSI" in selected_indicators:
+    rsi_days = st.slider("Select number of Interval for RSI", min_value=1, max_value=365, step=1, value=14, format="%d")
+    df["RSI"] = ta.rsi(df["Close"], length=rsi_days)
+
+if "Bollinger Bands" in selected_indicators:
+    bollinger_window = st.slider("Select Bollinger Bands Window", min_value=1, max_value=365, step=1, value=20, format="%d")
+
+    # Compute Bollinger Bands using pandas_ta
+    bb_result = ta.bbands(df["Close"], length=bollinger_window)
+
+    # Use the correct column names for Bollinger Bands
+    df["Bollinger Upper"] = bb_result["BBU_{}_2.0".format(bollinger_window)]
+    df["Bollinger Lower"] = bb_result["BBL_{}_2.0".format(bollinger_window)]
+    
+if "Moving Average Envelopes" in selected_indicators:
+    envelopes_window = st.slider("Select Moving Average Envelopes Window", min_value=1, max_value=365, step=1, value=20, format="%d")
+
+    df["Upper Envelope"] = df["Close"].rolling(window=envelopes_window).mean() + 2 * df["Close"].rolling(window=envelopes_window).std()
+    df["Lower Envelope"] = df["Close"].rolling(window=envelopes_window).mean() - 2 * df["Close"].rolling(window=envelopes_window).std()
 # Plotting candle chart
 fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1, row_heights=[0.6, 0.2, 0.2])
 
@@ -65,22 +88,20 @@ fig.add_trace(go.Bar(x=df.index,
                      marker=dict(color='blue'),
                      name='Volume'), row=2, col=1)
 
-# Add SMA to the secondary y-axis
-fig.add_trace(go.Scatter(x=df.index,
-                         y=df['SMA'],
-                         mode='lines',
-                         line=dict(color='blue'),
-                         name='SMA'), row=1, col=1)
-
-# Add RSI to the secondary subplot (row 2)
-fig.add_trace(go.Scatter(x=df.index,
-                         y=df['RSI'],
-                         mode='lines',
-                         line=dict(color='green'),
-                         name='RSI'), row=3, col=1)
-
+# Plot selected technical indicators
+for indicator in selected_indicators:
+    if indicator == "SMA":
+        fig.add_trace(go.Scatter(x=df.index, y=df['SMA'], mode='lines', line=dict(color='blue'), name='SMA'), row=1, col=1)
+    elif indicator == "RSI":
+        fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], mode='lines', line=dict(color='green'), name='RSI'), row=3, col=1)
+    elif indicator == "Bollinger Bands":
+        fig.add_trace(go.Scatter(x=df.index, y=df['Bollinger Upper'], mode='lines', line=dict(color='orange'), name='Bollinger Upper'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=df['Bollinger Lower'], mode='lines', line=dict(color='purple'), name='Bollinger Lower'), row=1, col=1)
+    elif indicator == "Moving Average Envelopes":
+        fig.add_trace(go.Scatter(x=df.index, y=df['Upper Envelope'], mode='lines', line=dict(color='orange'), name='Upper Envelope'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=df['Lower Envelope'], mode='lines', line=dict(color='purple'), name='Lower Envelope'), row=1, col=1)
 # Set layout
-fig.update_layout(title='Stock Analysis with Candlestick and RSI',
+fig.update_layout(title='Stock Analysis with Candlestick and Technical Indicators',
                   xaxis_title='Date',
                   yaxis_title='Price',
                   xaxis_rangeslider_visible=False)
@@ -91,9 +112,7 @@ st.plotly_chart(fig)
 try:
         # MACD parameters input
         st.subheader("MACD Analysis")
-        fast_period = st.slider("Select Fast Period for MACD", min_value=1, max_value=50, value=12)
-        slow_period = st.slider("Select Slow Period for MACD", min_value=1, max_value=50, value=26)
-        signal_period = st.slider("Select Signal Period for MACD", min_value=1, max_value=50, value=9)
+        fast_period, slow_period, signal_period = st.slider("Fast Period", 1, 50, 12), st.slider("Slow Period", 1, 50, 26), st.slider("Signal Period", 1, 50, 9)
 
         # Calculating MACD
         macd = ta.macd(df["Close"], fast=fast_period, slow=slow_period, signal=signal_period)
@@ -104,7 +123,7 @@ try:
         # Plotting MACD chart
         fig2 = make_subplots(rows=2, cols=1, shared_xaxes=True)
         macd_plot = go.Scatter(x=macd.index, y=macd["MACD"], name="MACD", mode="lines", marker=dict(color='blue'))
-        macd_signal = go.Scatter(x=macd.index, y=macd["SIGNAL"], name="Signal", mode="lines", marker=dict(color='black'))
+        macd_signal = go.Scatter(x=macd.index, y=macd["SIGNAL"], name="Signal", mode="lines", marker=dict(color='green'))
         colors = ['rgb(0, 128, 0)' if v >= 0 else 'rgb(255, 0, 0)' for v in macd["HISTOGRAM"]]
         macd_hist = go.Bar(x=macd.index, y=macd["HISTOGRAM"], name="Histogram", marker=dict(color=colors))
 
@@ -128,9 +147,24 @@ except Exception as e:
     st.error("Error. Please try again with different input, such as changing the Time Interval or Data Period.")
     st.stop()
     
+
+# Display historical data
 # Display historical data
 st.subheader(f"Showing historical data for {ticker} for the selected period: {selected_period}")
-st.write(df[["Open", "High", "Low", "Close", "RSI", "SMA"]])
+
+# Check if columns exist before trying to access them
+display_columns = ["Open", "High", "Low", "Close"]
+if "RSI" in selected_indicators:
+    display_columns.append("RSI")
+if "SMA" in selected_indicators:
+    display_columns.append("SMA")
+if "Bollinger Bands" in selected_indicators:
+    display_columns.extend(["Bollinger Upper", "Bollinger Lower"])
+if "Moving Average Envelopes" in selected_indicators:
+    display_columns.extend(["Upper Envelope", "Lower Envelope"])
+
+# Display the filtered DataFrame
+st.write(df[display_columns])
 
 # Fetch long historical data for prediction
 def fetch_long_historical_data(ticker, years=5):
@@ -182,3 +216,8 @@ fig.update_layout(
 
 # Show the plot
 st.plotly_chart(fig)
+
+# Display the last 90 days of forecasted data in a table without the index
+st.write("### Last 90 Days Forecasted Data")
+last_90_days_predicted_data = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].iloc[-90:].rename(columns={'ds': 'Date', 'yhat': 'Predicted', 'yhat_lower': 'Lower Bound', 'yhat_upper': 'Upper Bound'}).reset_index(drop=True)
+st.table(last_90_days_predicted_data)
