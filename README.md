@@ -16,7 +16,7 @@ Make sure to install the required Python libraries by running:
 ```bash
 pip install -r requirements.txt
 
-User Guide
+### User Guide
 Enter the stock ticker symbol in the designated input field.
 Select the desired data period and time interval.
 Adjust the number of intervals for SMA (Simple Moving Average) and RSI (Relative Strength Index).
