@@ -15,9 +15,12 @@ Make sure to install the required Python libraries by running:
 
 ```bash
 pip install -r requirements.txt
-
+```
+### Running the App
+To run the app locally, execute the following command in your terminal:
 ```bash
 streamlit run app.py
+```
 
 ### User Guide
 Enter the stock ticker symbol in the designated input field.
