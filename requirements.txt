@@ -1,7 +1,7 @@
     pandas
     plotly
     numpy
-    yfinance==0.2.33
+    yfinance
     mplfinance
     pandas_ta
     streamlit
